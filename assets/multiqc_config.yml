@@ -1,0 +1,8 @@
+run_modules:
+  - fastp
+
+sp:
+  fastp:
+    fn: '*.json'
+    
+use_filename_as_sample_name: true
