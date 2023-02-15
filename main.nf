@@ -47,6 +47,7 @@ process parseManifests {
 }
 process mergeFastqs {
     // publishDir params.publish_dir
+    container 'ubuntu'
     memory params.disk_merge_fastqs+' GB'
     tag {"$sampleID"}
     input:
