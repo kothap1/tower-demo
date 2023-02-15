@@ -110,10 +110,15 @@ process bwamem {
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
     input:
-    tuple val(sampleID), file(read1), file(read2) //, file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')
+    tuple val(sampleID), file(read1), file(read2) //, path(params.reference+'.amb'), path(params.reference+'.ann'), path(params.reference+'.bwt'), path(params.reference+'.pac'), path(params.reference+'.sa')
     output:
     tuple val(sampleID), file("*bam")
     script:
+    def ref_amb = file(params.reference+'.amb')
+    def ref_ann = file(params.reference+'.ann')
+    def ref_bwt = file(params.reference+'.bwt')
+    def ref_pac = file(params.reference+'.pac')
+    def ref_sa = file(params.reference+'.sa')
     """
     echo bwa-mem ${sampleID}
     ls -lrthL
@@ -351,7 +356,7 @@ workflow {
         .set { ch_reads }
     ch_samples = mergeFastqs(ch_reads)
     fastp(ch_samples)
-    bwamem(fastp.out.trimmed_fqs) //.map { row -> row +[file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')]})
+    bwamem(fastp.out.trimmed_fqs) //.map { row -> row +[(params.reference+'.amb'), (params.reference+'.ann'), (params.reference+'.bwt'), (params.reference+'.pac'), (params.reference+'.sa')]})
     bwamem.out
         .map { it -> [ (it[0] =~ /^(.+?)_S\d+(?=_(?:L00[0-4]|\d{4,}))/)[0][0], it[1]] }
         .groupTuple(by: [0])
