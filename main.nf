@@ -110,7 +110,7 @@ process bwamem {
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
     input:
-    tuple val(sampleID), file(read1), file(read2), file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')
+    tuple val(sampleID), file(read1), file(read2) //, file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')
     output:
     tuple val(sampleID), file("*bam")
     script:
@@ -121,11 +121,9 @@ process bwamem {
     ls -lrth
     df -h
     bwa mem -t ${params.bwamem_threads} \
-        ${params.reference} $read1 $read2 -o out.sam
+        ${params.reference} $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
     rm -f `readlink $read1`
     rm -f `readlink $read2`
-    samtools view -hb out.sam | samtools sort -o ${sampleID}.sorted.bam
-    rm -f out.sam
     """
 }
 process sambamba_merge {
@@ -353,7 +351,7 @@ workflow {
         .set { ch_reads }
     ch_samples = mergeFastqs(ch_reads)
     fastp(ch_samples)
-    bwamem(fastp.out.trimmed_fqs.map { row -> row +[file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')]})
+    bwamem(fastp.out.trimmed_fqs) //.map { row -> row +[file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')]})
     bwamem.out
         .map { it -> [ (it[0] =~ /^(.+?)_S\d+(?=_(?:L00[0-4]|\d{4,}))/)[0][0], it[1]] }
         .groupTuple(by: [0])
