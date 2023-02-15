@@ -371,7 +371,7 @@ workflow {
         ch_markdup_bam.map {it -> it[0]}.toList()
     )
     generate_manifests(
-        collateQC.out.collation_completed,
+        true,
         params.user_id,
         file(params.redsheet),
         file(params.manifestdir),
