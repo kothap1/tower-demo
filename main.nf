@@ -37,7 +37,7 @@ process parseManifests {
     echo ===
     ls -lrth
     df -h
-    python3 ${workflow.projectDir}/parse_manifests.py \
+    parse_manifests.py \
         --processing per-lane \
         --redsheet ${redsheet} \
         --manifestdir ${manifestdir} \
