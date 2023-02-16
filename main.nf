@@ -105,7 +105,7 @@ process bwamem {
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
     input:
-    tuple val(sampleID), file(read1), file(read2) file(reference), path(params.reference+'.bwt'), path(params.reference+'.pac'), path(params.reference+'.sa') //, path(params.reference+'.amb'), path(params.reference+'.ann')
+    tuple val(sampleID), file(read1), file(read2) file(reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa') , file(params.reference+'.amb'), file(params.reference+'.ann')
     output:
     tuple val(sampleID), file("*bam")
     script:
@@ -334,7 +334,7 @@ workflow {
     mergeFastqs(ch_reads)
     ch_samples = tuple(params.fsid, file(params.fr1), file(params.fr2))
     fastp(ch_samples)
-    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'))
+    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')), file(params.reference+'.amb'), file(params.reference+'.ann')
     bwamem(ch_samples)
     sambamba_merge(tuple(params.bmesid, [file(params.bme1), file(params.bme2), file(params.bme3), file(params.bme4)]))
     sambamba_markdup(tuple(params.bmdsid, file(params.bmd)))
