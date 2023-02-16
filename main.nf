@@ -284,7 +284,7 @@ workflow {
     sambamba_markdup(sambamba_merge.out.map { it -> [it[0], it[1]] })
     ch_markdup_bam = sambamba_markdup.out
     picard_CollectInsertSizeMetrics(ch_markdup_bam.map {it -> [it[0], it[1]]})
-    picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], reference]})
+    picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], file(params.reference)]})
     mosdepth(ch_markdup_bam)
     multiqc_config = file("$projectDir/assets/multiqc_config.yml")
     multiqc (
