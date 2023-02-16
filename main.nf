@@ -1,24 +1,5 @@
 nextflow.enable.dsl = 2
 
-process Hello {
-    container 'ubuntu'
-    script:
-    """
-    echo Hello
-    """
-}
-
-process S3test {
-    container 'ubuntu'
-    input:
-    tuple val(loc), path(redsheet)
-    script:
-    """
-    echo ${loc}
-    echo ${redsheet}
-    cat ${redsheet}
-    """
-}
 process parseManifests {
     container params.container_python
     publishDir params.publish_dir
@@ -54,9 +35,7 @@ process mergeFastqs {
     """
     echo Merge fastqs ${sampleID}
     cat ${sampleID}_R1_*.fastq.gz > ${sampleID}_R1.merged.fastq.gz
-    #rm -f `readlink ${sampleID}_R1_*.fastq.gz`
     cat ${sampleID}_R2_*.fastq.gz > ${sampleID}_R2.merged.fastq.gz
-    #rm -f `readlink ${sampleID}_R2_*.fastq.gz`
     """
 }
 process fastp {
@@ -102,11 +81,6 @@ process bwamem {
     script:
     """
     echo bwa-mem ${sampleID}
-    ls -lrth
-    pwd
-    ls -lrthL
-    echo $reference
-    echo ${params.bwamem_threads}
     bwa mem -t ${params.bwamem_threads} \
         $reference $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
     """
@@ -285,17 +259,23 @@ process generate_manifests {
 }
 
 workflow {
-    Hello()
-    S3test([params.redsheet, file(params.redsheet)])
-    parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
+    redsheet = file(params.redsheet)
+    manifestdir = file(params.manifestdir)
+    parseManifests([params.redsheet, redsheet, manifestdir, params.fastq_rootdir])
     parseManifests.out
         .splitCsv(header: true, sep: '\t')
-        .map { row-> tuple(row.sampleID, file(row.read1), file(row.read2)) }
+        .map { row-> tuple(row.sampleID, row.read1, row.read2) }
         .groupTuple(by: [0])
         .set { ch_reads }
     ch_samples = mergeFastqs(ch_reads)
     fastp(ch_samples)
-    bwamem(fastp.out.trimmed_fqs.map { row -> row +[file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'), file(params.reference+'.amb'), file(params.reference+'.ann')]})
+    reference = file(params.reference)
+    reference_bwt = file(params.reference+'.bwt')
+    reference_pac = file(params.reference+'.pac')
+    reference_sa = file(params.reference+'.sa')
+    reference_amb = file(params.reference+'.amb')
+    reference_ann = file(params.reference+'.ann')
+    bwamem(fastp.out.trimmed_fqs.map { row -> row +[reference, reference_bwt, reference_pac, reference_sa, reference_amb, reference_ann]})
     bwamem.out
         .map { it -> [ (it[0] =~ /^(.+?)_S\d+(?=_(?:L00[0-4]|\d{4,}))/)[0][0], it[1]] }
         .groupTuple(by: [0])
@@ -304,7 +284,7 @@ workflow {
     sambamba_markdup(sambamba_merge.out.map { it -> [it[0], it[1]] })
     ch_markdup_bam = sambamba_markdup.out
     picard_CollectInsertSizeMetrics(ch_markdup_bam.map {it -> [it[0], it[1]]})
-    picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], file(params.reference)]})
+    picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], reference]})
     mosdepth(ch_markdup_bam)
     multiqc_config = file("$projectDir/assets/multiqc_config.yml")
     multiqc (
@@ -316,7 +296,7 @@ workflow {
     collateQC (
         params.redsheet.split("\\.")[0],
         file("$projectDir/ipynbs/QC_metric_collation.ipynb"),
-        file(params.redsheet),
+        redsheet,
         fastp.out.fastp_qc.collect(),
         mosdepth.out.collect {it[1]},
         picard_CollectInsertSizeMetrics.out.collect {it[1]},
@@ -326,8 +306,8 @@ workflow {
     generate_manifests(
         collateQC.out.collation_completed,
         params.user_id,
-        file(params.redsheet),
-        file(params.manifestdir),
+        redsheet,
+        manifestdir,
         ch_markdup_bam.map {it -> it[0]}.toList()
     )
 }
