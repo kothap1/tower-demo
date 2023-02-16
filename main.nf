@@ -33,10 +33,6 @@ process parseManifests {
     script:
     """
     echo Parse manifests ${redsheet}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     parse_manifests.py \
         --processing per-lane \
         --redsheet ${redsheet} \
@@ -57,10 +53,6 @@ process mergeFastqs {
     script:
     """
     echo Merge fastqs ${sampleID}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     cat ${sampleID}_R1_*.fastq.gz > ${sampleID}_R1.merged.fastq.gz
     #rm -f `readlink ${sampleID}_R1_*.fastq.gz`
     cat ${sampleID}_R2_*.fastq.gz > ${sampleID}_R2.merged.fastq.gz
@@ -84,10 +76,6 @@ process fastp {
     script:
     """
     echo Fastp ${sampleID}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     fastp -i $read1 -I $read2 \
         -o ${sampleID}_R1.trimmed.fq.gz -O ${sampleID}_R2.trimmed.fq.gz \
         -h ${sampleID}.html -j ${sampleID}.json -R "fastp report for sample: ${sampleID}" \
@@ -99,8 +87,6 @@ process fastp {
         --trim_poly_x \
         --trim_poly_g \
         --cut_tail
-    rm -f `readlink $read1`
-    rm -f `readlink $read2`
     """
 }
 process bwamem {
@@ -110,25 +96,19 @@ process bwamem {
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
     input:
-    tuple val(sampleID), file(read1), file(read2), path(params.reference+'.bwt'), path(params.reference+'.pac'), path(params.reference+'.sa') //, path(params.reference+'.amb'), path(params.reference+'.ann')
+    tuple val(sampleID), file(read1), file(read2), file(reference), file(reference_bwt), file(reference_pac), file(reference_sa), file(reference_amb), file(reference_ann)
     output:
     tuple val(sampleID), file("*bam")
     script:
-    // def ref_amb = file(params.reference+'.amb')
-    // def ref_ann = file(params.reference+'.ann')
-    // def ref_bwt = file(params.reference+'.bwt')
-    // def ref_pac = file(params.reference+'.pac')
-    // def ref_sa = file(params.reference+'.sa')
     """
     echo bwa-mem ${sampleID}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
+    echo $reference
+    echo ${params.bwamem_threads}
     bwa mem -t ${params.bwamem_threads} \
-        ${params.reference} $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
-    rm -f `readlink $read1`
-    rm -f `readlink $read2`
+        $reference $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
     """
 }
 process sambamba_merge {
@@ -144,14 +124,9 @@ process sambamba_merge {
     script:
     """
     echo sambamba-merge ${sampleID}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     sambamba merge \
         --nthreads ${params.sambamba_merge_threads} \
         ${sampleID}.merged.bam $bam 
-    rm -f `readlink $bam`
     """
 }
 process sambamba_markdup {
@@ -167,10 +142,6 @@ process sambamba_markdup {
     script:
     """
     echo sambamba-markdup
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     sambamba markdup \
         --overflow-list-size 200000 \
         $bam ${sampleID}.markeddup.bam
@@ -189,10 +160,6 @@ process picard_CollectInsertSizeMetrics {
     script:
     """
     echo Picard CISM ${sampleID}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     picard CollectInsertSizeMetrics  \
     -I $bam \
     -O ${sampleID}.insert_size_metrics.txt \
@@ -217,10 +184,6 @@ process picard_CollectMultipleMetrics {
     // reference = file(params.reference)
     """
     echo picard CMM ${sampleID}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     picard CollectMultipleMetrics  \
     -I $bam \
     -O ${sampleID} \
@@ -243,10 +206,6 @@ process mosdepth {
     script:
     """
     echo mosdepth ${sampleID}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     mosdepth --no-per-base -F 1796 -i 2 $sampleID $bam
     """
 }
@@ -267,10 +226,6 @@ process multiqc {
     samplenames = samplenames.join(' ').trim()
     """
     echo MultiQC ${redsheet_name}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
     multiqc .
     """
 }
@@ -298,21 +253,9 @@ process collateQC {
 	samplenames = samplenames.join(' ').trim()
     """
     echo CollateQC ${redsheet}
-    python --version
-    echo ${redsheet_name}
-    echo ${notebook}
-    echo ${redsheet}
-    echo ${samplenames}
 	echo "_ --redsheet ${redsheet} --batch_path ./QC_metrics/ --xlsx collated_qc.xlsx" > .config_ipynb
 	jupyter nbconvert --execute ${notebook} --to html --no-input --output collated_qc.html --output-dir .
     for sample in ${samplenames}; do cp collated_qc.html batchqc_\${sample}.html; cp collated_qc.xlsx batchqc_\${sample}.xlsx; done; rm collated_qc*
-    ls QC_metrics
-    ls -a
-    ls QC_metrics/fastp/
-    ls QC_metrics/mosdepth/
-    ls QC_metrics/picard_CollectInsertSizeMetrics/
-    ls QC_metrics/picard_CollectMultipleMetrics/
-    df -h
     """
 }
 process generate_manifests {
@@ -333,10 +276,6 @@ process generate_manifests {
     script:
     """
     echo Generate Manifests ${redsheet}
-    ls -lrthL
-    echo ===
-    ls -lrth
-    df -h
 	generate_manifests_for_outputs.py \
 	--redsheet ${redsheet} \
 	--manifestdir ${manifestdir} \
@@ -356,7 +295,7 @@ workflow {
         .set { ch_reads }
     ch_samples = mergeFastqs(ch_reads)
     fastp(ch_samples)
-    bwamem(fastp.out.trimmed_fqs.map { row -> row +[(params.reference+'.bwt'), (params.reference+'.pac'), (params.reference+'.sa')]}) //(params.reference+'.amb'), (params.reference+'.ann'), 
+    bwamem(fastp.out.trimmed_fqs.map { row -> row +[file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'), file(params.reference+'.amb'), file(params.reference+'.ann')]})
     bwamem.out
         .map { it -> [ (it[0] =~ /^(.+?)_S\d+(?=_(?:L00[0-4]|\d{4,}))/)[0][0], it[1]] }
         .groupTuple(by: [0])
@@ -367,15 +306,25 @@ workflow {
     picard_CollectInsertSizeMetrics(ch_markdup_bam.map {it -> [it[0], it[1]]})
     picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], file(params.reference)]})
     mosdepth(ch_markdup_bam)
-    multiqc_config = file("$projectDir/multiqc_config.yml")
+    multiqc_config = file("$projectDir/assets/multiqc_config.yml")
     multiqc (
         params.redsheet.split("\\.")[0],
         multiqc_config,
         fastp.out.fastp_qc.collect(),
         ch_markdup_bam.map {it -> it[0]}.toList()
     )
+    collateQC (
+        params.redsheet.split("\\.")[0],
+        file("$projectDir/ipynbs/QC_metric_collation.ipynb"),
+        file(params.redsheet),
+        fastp.out.fastp_qc.collect(),
+        mosdepth.out.collect {it[1]},
+        picard_CollectInsertSizeMetrics.out.collect {it[1]},
+        picard_CollectMultipleMetrics.out.collect {it[1]},
+        ch_markdup_bam.map {it -> it[0]}.toList()
+    )
     generate_manifests(
-        true,
+        collateQC.out.collation_completed,
         params.user_id,
         file(params.redsheet),
         file(params.manifestdir),
