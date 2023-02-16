@@ -117,6 +117,8 @@ process bwamem {
     ls -lrth
     pwd
     ls -lrthL
+    echo $reference
+    echo ${params.bwamem_threads}
     bwa mem -t ${params.bwamem_threads} \
         $reference $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
     """
