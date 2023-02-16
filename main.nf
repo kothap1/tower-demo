@@ -105,7 +105,7 @@ process bwamem {
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
     input:
-    tuple val(sampleID), file(read1), file(read2) file(reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa') , file(params.reference+'.amb'), file(params.reference+'.ann')
+    tuple val(sampleID), file(read1), file(read2), file(reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa') , file(params.reference+'.amb'), file(params.reference+'.ann')
     output:
     tuple val(sampleID), file("*bam")
     script:
