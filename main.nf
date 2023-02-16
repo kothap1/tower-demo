@@ -264,7 +264,7 @@ workflow {
     parseManifests([params.redsheet, redsheet, manifestdir, params.fastq_rootdir])
     parseManifests.out
         .splitCsv(header: true, sep: '\t')
-        .map { row-> tuple(row.sampleID, row.read1, row.read2) }
+        .map { row-> tuple(row.sampleID, file(row.read1), file(row.read2)) }
         .groupTuple(by: [0])
         .set { ch_reads }
     ch_samples = mergeFastqs(ch_reads)
@@ -284,7 +284,7 @@ workflow {
     sambamba_markdup(sambamba_merge.out.map { it -> [it[0], it[1]] })
     ch_markdup_bam = sambamba_markdup.out
     picard_CollectInsertSizeMetrics(ch_markdup_bam.map {it -> [it[0], it[1]]})
-    picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], file(params.reference)]})
+    picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], reference]})
     mosdepth(ch_markdup_bam)
     multiqc_config = file("$projectDir/assets/multiqc_config.yml")
     multiqc (
