@@ -339,4 +339,29 @@ workflow {
     picard_CollectInsertSizeMetrics(tuple(params.psid, file(params.pb)))
     picard_CollectMultipleMetrics(tuple(params.psid, file(params.pb), file(params.reference)))
     mosdepth(tuple(params.psid, file(params.pb), file(params.pbi)))
+    multiqc_config = file("$projectDir/assets/multiqc_config.yml")
+    multiqc (
+        params.redsheet.split("\\.")[0],
+        multiqc_config,
+        fastp.out.fastp_qc.collect(),
+        ch_markdup_bam.map {it -> it[0]}.toList()
+    )
+    collateQC (
+        params.redsheet.split("\\.")[0],
+        file("$projectDir/ipynbs/QC_metric_collation.ipynb"),
+        file(params.redsheet),
+        fastp.out.fastp_qc.collect(),
+        mosdepth.out.collect {it[1]},
+        picard_CollectInsertSizeMetrics.out.collect {it[1]},
+        picard_CollectMultipleMetrics.out.collect {it[1]},
+        ch_markdup_bam.map {it -> it[0]}.toList()
+    )
+    // collateQC.out.collation_completed,
+    generate_manifests(
+        collateQC.out.collation_completed,
+        params.user_id,
+        file(params.redsheet),
+        file(params.manifestdir),
+        ch_markdup_bam.map {it -> it[0]}.toList()
+    )
 }
