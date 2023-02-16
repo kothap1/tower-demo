@@ -117,7 +117,7 @@ process sambamba_markdup {
     """
     echo sambamba-markdup
     sambamba markdup \
-        --overflow-list-size 200000 \
+        --overflow-list-size 2000000 \
         $bam ${sampleID}.markeddup.bam
 
     """
