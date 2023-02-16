@@ -110,7 +110,7 @@ process bwamem {
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
     input:
-    tuple val(sampleID), file(read1), file(read2) //, path(params.reference+'.bwt'), path(params.reference+'.pac'), path(params.reference+'.sa') //, path(params.reference+'.amb'), path(params.reference+'.ann')
+    tuple val(sampleID), file(read1), file(read2) file(reference), path(params.reference+'.bwt'), path(params.reference+'.pac'), path(params.reference+'.sa') //, path(params.reference+'.amb'), path(params.reference+'.ann')
     output:
     tuple val(sampleID), file("*bam")
     script:
@@ -118,12 +118,12 @@ process bwamem {
     echo bwa-mem ${sampleID}
     echo ${read1}
     echo ${read2}
-    bwa index ${params.reference}
+    pwd
     ls
     echo ${params.reference}
     echo ${params.reference}.amb
     bwa mem -t ${params.bwamem_threads} \
-        ${params.reference} $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
+        $reference $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
     """
 }
 process sambamba_merge {
@@ -343,7 +343,7 @@ process generate_manifests {
 workflow {
     Hello()
     S3test([params.redsheet, file(params.redsheet)])
-    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2)) //, file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'))
+    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'))
     bwamem(ch_samples)
     /*
     parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
