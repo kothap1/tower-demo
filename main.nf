@@ -118,6 +118,7 @@ process bwamem {
     echo bwa-mem ${sampleID}
     echo ${read1}
     echo ${read2}
+    bwa index ${params.reference}
     ls
     echo ${params.reference}
     echo ${params.reference}.amb
