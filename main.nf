@@ -327,6 +327,9 @@ process generate_manifests {
 workflow {
     Hello()
     S3test([params.redsheet, file(params.redsheet)])
+    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'), file(params.reference+'.amb'), file(params.reference+'.ann'))
+    bwamem(ch_samples)
+    /*
     parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
     ch_reads = tuple(params.sid,[file(params.r11), file(params.r12)],[file(params.r21), file(params.r22)])
     mergeFastqs(ch_reads)
@@ -365,4 +368,5 @@ workflow {
         file(params.manifestdir),
         ch_markdup_bam.map {it -> it[0]}.toList()
     )
+    */
 }
