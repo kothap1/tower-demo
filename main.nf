@@ -339,6 +339,7 @@ workflow {
     picard_CollectInsertSizeMetrics(tuple(params.psid, file(params.pb)))
     picard_CollectMultipleMetrics(tuple(params.psid, file(params.pb), file(params.reference)))
     mosdepth(tuple(params.psid, file(params.pb), file(params.pbi)))
+    ch_markdup_bam = sambamba_markdup.out
     multiqc_config = file("$projectDir/assets/multiqc_config.yml")
     multiqc (
         params.redsheet.split("\\.")[0],
