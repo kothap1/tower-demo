@@ -327,53 +327,16 @@ process generate_manifests {
 workflow {
     Hello()
     S3test([params.redsheet, file(params.redsheet)])
-    // ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'))
-    // bwamem(ch_samples)
     parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
     ch_reads = tuple(params.sid,[file(params.r11), file(params.r12)],[file(params.r21), file(params.r22)])
     mergeFastqs(ch_reads)
     ch_samples = tuple(params.fsid, file(params.fr1), file(params.fr2))
     fastp(ch_samples)
-    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')), file(params.reference+'.amb'), file(params.reference+'.ann')
+    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'), file(params.reference+'.amb'), file(params.reference+'.ann'))
     bwamem(ch_samples)
     sambamba_merge(tuple(params.bmesid, [file(params.bme1), file(params.bme2), file(params.bme3), file(params.bme4)]))
     sambamba_markdup(tuple(params.bmdsid, file(params.bmd)))
     picard_CollectInsertSizeMetrics(tuple(params.psid, file(params.pb)))
     picard_CollectMultipleMetrics(tuple(params.psid, file(params.pb), file(params.reference)))
     mosdepth(tuple(params.psid, file(params.pb), file(params.pbi)))
-    /*
-    parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
-    parseManifests.out
-        .splitCsv(header: true, sep: '\t')
-        .map { row-> tuple(row.sampleID, file(row.read1), file(row.read2)) }
-        .groupTuple(by: [0])
-        .set { ch_reads }
-    ch_samples = mergeFastqs(ch_reads)
-    fastp(ch_samples)
-    bwamem(fastp.out.trimmed_fqs.map { row -> row +[(params.reference+'.bwt'), (params.reference+'.pac'), (params.reference+'.sa')]}) //(params.reference+'.amb'), (params.reference+'.ann'), 
-    bwamem.out
-        .map { it -> [ (it[0] =~ /^(.+?)_S\d+(?=_(?:L00[0-4]|\d{4,}))/)[0][0], it[1]] }
-        .groupTuple(by: [0])
-        .set { ch_merge_bams }
-    sambamba_merge(ch_merge_bams)
-    sambamba_markdup(sambamba_merge.out.map { it -> [it[0], it[1]] })
-    ch_markdup_bam = sambamba_markdup.out
-    picard_CollectInsertSizeMetrics(ch_markdup_bam.map {it -> [it[0], it[1]]})
-    picard_CollectMultipleMetrics(ch_markdup_bam.map {it -> [it[0], it[1], file(params.reference)]})
-    mosdepth(ch_markdup_bam)
-    multiqc_config = file("$projectDir/multiqc_config.yml")
-    multiqc (
-        params.redsheet.split("\\.")[0],
-        multiqc_config,
-        fastp.out.fastp_qc.collect(),
-        ch_markdup_bam.map {it -> it[0]}.toList()
-    )
-    generate_manifests(
-        true,
-        params.user_id,
-        file(params.redsheet),
-        file(params.manifestdir),
-        ch_markdup_bam.map {it -> it[0]}.toList()
-    )
-    */
 }
