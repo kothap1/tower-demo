@@ -33,10 +33,9 @@ process parseManifests {
     script:
     """
     echo Parse manifests ${redsheet}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     parse_manifests.py \
         --processing per-lane \
         --redsheet ${redsheet} \
@@ -57,10 +56,9 @@ process mergeFastqs {
     script:
     """
     echo Merge fastqs ${sampleID}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     cat ${sampleID}_R1_*.fastq.gz > ${sampleID}_R1.merged.fastq.gz
     #rm -f `readlink ${sampleID}_R1_*.fastq.gz`
     cat ${sampleID}_R2_*.fastq.gz > ${sampleID}_R2.merged.fastq.gz
@@ -84,10 +82,9 @@ process fastp {
     script:
     """
     echo Fastp ${sampleID}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     fastp -i $read1 -I $read2 \
         -o ${sampleID}_R1.trimmed.fq.gz -O ${sampleID}_R2.trimmed.fq.gz \
         -h ${sampleID}.html -j ${sampleID}.json -R "fastp report for sample: ${sampleID}" \
@@ -99,8 +96,6 @@ process fastp {
         --trim_poly_x \
         --trim_poly_g \
         --cut_tail
-    rm -f `readlink $read1`
-    rm -f `readlink $read2`
     """
 }
 process bwamem {
@@ -116,12 +111,9 @@ process bwamem {
     script:
     """
     echo bwa-mem ${sampleID}
-    echo ${read1}
-    echo ${read2}
+    ls -lrth
     pwd
-    ls
-    echo ${params.reference}
-    echo ${params.reference}.amb
+    ls -lrthL
     bwa mem -t ${params.bwamem_threads} \
         $reference $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
     """
@@ -139,14 +131,12 @@ process sambamba_merge {
     script:
     """
     echo sambamba-merge ${sampleID}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     sambamba merge \
         --nthreads ${params.sambamba_merge_threads} \
         ${sampleID}.merged.bam $bam 
-    rm -f `readlink $bam`
     """
 }
 process sambamba_markdup {
@@ -162,10 +152,9 @@ process sambamba_markdup {
     script:
     """
     echo sambamba-markdup
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     sambamba markdup \
         --overflow-list-size 200000 \
         $bam ${sampleID}.markeddup.bam
@@ -184,10 +173,9 @@ process picard_CollectInsertSizeMetrics {
     script:
     """
     echo Picard CISM ${sampleID}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     picard CollectInsertSizeMetrics  \
     -I $bam \
     -O ${sampleID}.insert_size_metrics.txt \
@@ -212,10 +200,9 @@ process picard_CollectMultipleMetrics {
     // reference = file(params.reference)
     """
     echo picard CMM ${sampleID}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     picard CollectMultipleMetrics  \
     -I $bam \
     -O ${sampleID} \
@@ -238,10 +225,9 @@ process mosdepth {
     script:
     """
     echo mosdepth ${sampleID}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     mosdepth --no-per-base -F 1796 -i 2 $sampleID $bam
     """
 }
@@ -262,10 +248,9 @@ process multiqc {
     samplenames = samplenames.join(' ').trim()
     """
     echo MultiQC ${redsheet_name}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
     multiqc .
     """
 }
@@ -328,10 +313,9 @@ process generate_manifests {
     script:
     """
     echo Generate Manifests ${redsheet}
-    ls -lrthL
-    echo ===
     ls -lrth
-    df -h
+    pwd
+    ls -lrthL
 	generate_manifests_for_outputs.py \
 	--redsheet ${redsheet} \
 	--manifestdir ${manifestdir} \
@@ -343,8 +327,20 @@ process generate_manifests {
 workflow {
     Hello()
     S3test([params.redsheet, file(params.redsheet)])
-    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'))
+    // ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'))
+    // bwamem(ch_samples)
+    parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
+    ch_reads = tuple(params.sid,[file(params.r11), file(params.r12)],[file(params.r21), file(params.r22)])
+    mergeFastqs(ch_reads)
+    ch_samples = tuple(params.fsid, file(params.fr1), file(params.fr2))
+    fastp(ch_samples)
+    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference+'.amb'), file(params.reference+'.ann'), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'))
     bwamem(ch_samples)
+    sambamba_merge(tuple(params.bmesid, [file(params.bme1), file(params.bme2), file(params.bme3), file(params.bme4)]))
+    sambamba_markdup(tuple(params.bmdsid, file(params.bmd)))
+    picard_CollectInsertSizeMetrics(tuple(params.psid, file(params.pb)))
+    picard_CollectMultipleMetrics(tuple(params.psid, file(params.pb), file(params.reference)))
+    mosdepth(tuple(params.psid, file(params.pb), file(params.pbi)))
     /*
     parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
     parseManifests.out
