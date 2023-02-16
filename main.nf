@@ -105,7 +105,7 @@ process bwamem {
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
     input:
-    tuple val(sampleID), file(read1), file(read2), file(reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa') , file(params.reference+'.amb'), file(params.reference+'.ann')
+    tuple val(sampleID), file(read1), file(read2), file(reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa') //, file(params.reference+'.amb'), file(params.reference+'.ann')
     output:
     tuple val(sampleID), file("*bam")
     script:
@@ -327,7 +327,7 @@ process generate_manifests {
 workflow {
     Hello()
     S3test([params.redsheet, file(params.redsheet)])
-    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa'), file(params.reference+'.amb'), file(params.reference+'.ann'))
+    ch_samples = tuple(params.bsid, file(params.br1), file(params.br2), file(params.reference), file(params.reference+'.bwt'), file(params.reference+'.pac'), file(params.reference+'.sa')) //, file(params.reference+'.amb'), file(params.reference+'.ann'))
     bwamem(ch_samples)
     /*
     parseManifests([params.redsheet, file(params.redsheet), file(params.manifestdir), params.fastq_rootdir])
