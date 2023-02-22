@@ -124,7 +124,7 @@ process sambamba_markdup {
 }
 process picard_CollectInsertSizeMetrics {
     container params.container_picard
-    publishDir params.publish_dir+, pattern: "*.txt"
+    publishDir params.publish_dir, pattern: "*.txt"
     memory params.disk_picard_CISM+' GB'
     tag {"$sampleID"}
     input:
