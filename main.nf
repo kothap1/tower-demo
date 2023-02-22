@@ -23,7 +23,7 @@ process parseManifests {
     """
 }
 process mergeFastqs {
-    // publishDir params.publish_dir
+    publishDir params.publish_dir
     container 'ubuntu'
     memory params.disk_merge_fastqs+' GB'
     tag {"$sampleID"}
@@ -40,7 +40,7 @@ process mergeFastqs {
 }
 process fastp {
     container params.container_fastp
-    publishDir params.publish_dir, pattern: "*.json"
+    publishDir params.publish_dir //, pattern: "*.json"
     cpus params.fastp_threads
     memory params.disk_fastp+' GB'
     tag {"$sampleID"}
@@ -70,7 +70,7 @@ process fastp {
 }
 process bwamem {
     container params.container_bwa_samtools
-    // publishDir params.publish_dir
+    publishDir params.publish_dir
     cpus params.bwamem_threads
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
@@ -87,7 +87,7 @@ process bwamem {
 }
 process sambamba_merge {
     container params.container_sambamba
-    // publishDir params.publish_dir
+    publishDir params.publish_dir
     cpus params.sambamba_merge_threads
     memory params.disk_sambamba_merge+' GB'
     tag {"$sampleID"}
@@ -105,7 +105,7 @@ process sambamba_merge {
 }
 process sambamba_markdup {
     container params.container_sambamba
-    publishDir params.publish_dir, pattern: "*.{bam,bai}"
+    publishDir params.publish_dir //, pattern: "*.{bam,bai}"
     cpus params.sambamba_markdup_threads
     memory params.disk_sambamba_markdup+' GB'
     tag {"$sampleID"}
@@ -119,12 +119,12 @@ process sambamba_markdup {
     sambamba markdup \
         --overflow-list-size 2000000 \
         $bam ${sampleID}.markeddup.bam
-
+    ls -alrth
     """
 }
 process picard_CollectInsertSizeMetrics {
     container params.container_picard
-    publishDir params.publish_dir, pattern: "*.txt"
+    publishDir params.publish_dir //, pattern: "*.txt"
     memory params.disk_picard_CISM+' GB'
     tag {"$sampleID"}
     input:
@@ -143,7 +143,7 @@ process picard_CollectInsertSizeMetrics {
 }
 process picard_CollectMultipleMetrics {
     container params.container_picard
-    publishDir params.publish_dir, pattern: "*metrics"
+    publishDir params.publish_dir //, pattern: "*metrics"
     memory params.disk_picard_CMM+' GB'
     tag {"$sampleID"}
     input:
@@ -169,7 +169,7 @@ process picard_CollectMultipleMetrics {
 }
 process mosdepth {
     container params.container_mosdepth
-    publishDir params.publish_dir, pattern: "*.{html,xlsx}"
+    publishDir params.publish_dir //, pattern: "*.{html,xlsx}"
     cpus params.mosdepth_threads
     memory params.disk_mosdepth+' GB'
     tag {"$sampleID"}
@@ -185,7 +185,7 @@ process mosdepth {
 }
 process multiqc {
     container params.container_multiqc
-    publishDir params.publish_dir, pattern: "*.html"
+    publishDir params.publish_dir //, pattern: "*.html"
     memory params.disk_multiqc+' GB'
     tag {"$redsheet_name"}
     afterScript "for sample in ${samplenames}; do cp multiqc_report.html multiqc_\${sample}.html; done; rm multiqc_report.html"
