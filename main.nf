@@ -101,6 +101,7 @@ process sambamba_merge {
     sambamba merge \
         --nthreads ${params.sambamba_merge_threads} \
         ${sampleID}.merged.bam $bam 
+    ls -alrth
     """
 }
 process sambamba_markdup {
@@ -119,7 +120,7 @@ process sambamba_markdup {
     sambamba markdup \
         --overflow-list-size 200000 \
         $bam ${sampleID}.markeddup.bam
-
+    ls -alrth
     """
 }
 process picard_CollectInsertSizeMetrics {
@@ -139,6 +140,7 @@ process picard_CollectInsertSizeMetrics {
     -O ${sampleID}.insert_size_metrics.txt \
     -H ${sampleID}.insert_size_histogram.pdf \
     -VALIDATION_STRINGENCY SILENT
+    ls -alrth
     """
 }
 process picard_CollectMultipleMetrics {
@@ -165,6 +167,7 @@ process picard_CollectMultipleMetrics {
     --PROGRAM null \
     ${PROGRAMS} \
     -VALIDATION_STRINGENCY SILENT
+    ls -alrth
     """
 }
 process mosdepth {
@@ -181,6 +184,7 @@ process mosdepth {
     """
     echo mosdepth ${sampleID}
     mosdepth --no-per-base -F 1796 -i 2 $sampleID $bam
+    ls -alrth
     """
 }
 process multiqc {
@@ -201,6 +205,7 @@ process multiqc {
     """
     echo MultiQC ${redsheet_name}
     multiqc .
+    ls -alrth
     """
 }
 process collateQC {
@@ -230,6 +235,7 @@ process collateQC {
 	echo "_ --redsheet ${redsheet} --batch_path ./QC_metrics/ --xlsx collated_qc.xlsx" > .config_ipynb
 	jupyter nbconvert --execute ${notebook} --to html --no-input --output collated_qc.html --output-dir .
     for sample in ${samplenames}; do cp collated_qc.html batchqc_\${sample}.html; cp collated_qc.xlsx batchqc_\${sample}.xlsx; done; rm collated_qc*
+    ls -alrth
     """
 }
 process generate_manifests {
@@ -255,6 +261,7 @@ process generate_manifests {
 	--manifestdir ${manifestdir} \
 	--samplename ${samplename} \
     --userid ${user_id}
+    ls -alrth
     """
 }
 
