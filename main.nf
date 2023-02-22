@@ -19,7 +19,8 @@ process parseManifests {
         --redsheet ${redsheet} \
         --manifestdir ${manifestdir} \
         --fastq_rootdir ${fastq_rootdir}
-
+    hostname
+    df -h
     """
 }
 process mergeFastqs {
@@ -36,6 +37,8 @@ process mergeFastqs {
     echo Merge fastqs ${sampleID}
     cat ${sampleID}_R1_*.fastq.gz > ${sampleID}_R1.merged.fastq.gz
     cat ${sampleID}_R2_*.fastq.gz > ${sampleID}_R2.merged.fastq.gz
+    hostname
+    df -h
     """
 }
 process fastp {
@@ -66,6 +69,8 @@ process fastp {
         --trim_poly_x \
         --trim_poly_g \
         --cut_tail
+    hostname
+    df -h
     """
 }
 process bwamem {
@@ -83,6 +88,8 @@ process bwamem {
     echo bwa-mem ${sampleID}
     bwa mem -t ${params.bwamem_threads} \
         $reference $read1 $read2 | samtools view -hb | samtools sort -o ${sampleID}.sorted.bam
+    hostname
+    df -h
     """
 }
 process sambamba_merge {
@@ -102,6 +109,8 @@ process sambamba_merge {
         --nthreads ${params.sambamba_merge_threads} \
         ${sampleID}.merged.bam $bam 
     ls -alrth
+    hostname
+    df -h
     """
 }
 process sambamba_markdup {
@@ -121,6 +130,8 @@ process sambamba_markdup {
         --overflow-list-size 200000 \
         $bam ${sampleID}.markeddup.bam
     ls -alrth
+    hostname
+    df -h
     """
 }
 process picard_CollectInsertSizeMetrics {
@@ -141,6 +152,8 @@ process picard_CollectInsertSizeMetrics {
     -H ${sampleID}.insert_size_histogram.pdf \
     -VALIDATION_STRINGENCY SILENT
     ls -alrth
+    hostname
+    df -h
     """
 }
 process picard_CollectMultipleMetrics {
@@ -168,6 +181,8 @@ process picard_CollectMultipleMetrics {
     ${PROGRAMS} \
     -VALIDATION_STRINGENCY SILENT
     ls -alrth
+    hostname
+    df -h
     """
 }
 process mosdepth {
@@ -185,6 +200,8 @@ process mosdepth {
     echo mosdepth ${sampleID}
     mosdepth --no-per-base -F 1796 -i 2 $sampleID $bam
     ls -alrth
+    hostname
+    df -h
     """
 }
 process multiqc {
@@ -206,6 +223,8 @@ process multiqc {
     echo MultiQC ${redsheet_name}
     multiqc .
     ls -alrth
+    hostname
+    df -h
     """
 }
 process collateQC {
@@ -236,6 +255,8 @@ process collateQC {
 	jupyter nbconvert --execute ${notebook} --to html --no-input --output collated_qc.html --output-dir .
     for sample in ${samplenames}; do cp collated_qc.html batchqc_\${sample}.html; cp collated_qc.xlsx batchqc_\${sample}.xlsx; done; rm collated_qc*
     ls -alrth
+    hostname
+    df -h
     """
 }
 process generate_manifests {
@@ -262,6 +283,8 @@ process generate_manifests {
 	--samplename ${samplename} \
     --userid ${user_id}
     ls -alrth
+    hostname
+    df -h
     """
 }
 
