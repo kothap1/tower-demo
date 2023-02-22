@@ -2,7 +2,7 @@ nextflow.enable.dsl = 2
 
 process parseManifests {
     container params.container_python
-    publishDir params.publish_dir
+    publishDir params.publish_dir+'/s1'
     tag {"$samples"}
 
     input:
@@ -23,7 +23,7 @@ process parseManifests {
     """
 }
 process mergeFastqs {
-    // publishDir params.publish_dir
+    publishDir params.publish_dir+'/s2'
     container 'ubuntu'
     memory params.disk_merge_fastqs+' GB'
     tag {"$sampleID"}
@@ -40,7 +40,7 @@ process mergeFastqs {
 }
 process fastp {
     container params.container_fastp
-    publishDir params.publish_dir, pattern: "*.json"
+    publishDir params.publish_dir+'/s3' //, pattern: "*.json"
     cpus params.fastp_threads
     memory params.disk_fastp+' GB'
     tag {"$sampleID"}
@@ -70,7 +70,7 @@ process fastp {
 }
 process bwamem {
     container params.container_bwa_samtools
-    // publishDir params.publish_dir
+    publishDir params.publish_dir+'/s4'
     cpus params.bwamem_threads
     memory params.disk_bwamem+' GB'
     tag {"$sampleID"}
@@ -87,7 +87,7 @@ process bwamem {
 }
 process sambamba_merge {
     container params.container_sambamba
-    // publishDir params.publish_dir
+    publishDir params.publish_dir+'/s5'
     cpus params.sambamba_merge_threads
     memory params.disk_sambamba_merge+' GB'
     tag {"$sampleID"}
@@ -105,7 +105,7 @@ process sambamba_merge {
 }
 process sambamba_markdup {
     container params.container_sambamba
-    publishDir params.publish_dir, pattern: "*.{bam,bai}"
+    publishDir params.publish_dir+'/s6' //, pattern: "*.{bam,bai}"
     cpus params.sambamba_markdup_threads
     memory params.disk_sambamba_markdup+' GB'
     tag {"$sampleID"}
@@ -124,7 +124,7 @@ process sambamba_markdup {
 }
 process picard_CollectInsertSizeMetrics {
     container params.container_picard
-    publishDir params.publish_dir, pattern: "*.txt"
+    publishDir params.publish_dir+'/s7' //, pattern: "*.txt"
     memory params.disk_picard_CISM+' GB'
     tag {"$sampleID"}
     input:
@@ -143,7 +143,7 @@ process picard_CollectInsertSizeMetrics {
 }
 process picard_CollectMultipleMetrics {
     container params.container_picard
-    publishDir params.publish_dir, pattern: "*metrics"
+    publishDir params.publish_dir+'/s8' //, pattern: "*metrics"
     memory params.disk_picard_CMM+' GB'
     tag {"$sampleID"}
     input:
@@ -169,7 +169,7 @@ process picard_CollectMultipleMetrics {
 }
 process mosdepth {
     container params.container_mosdepth
-    publishDir params.publish_dir, pattern: "*.{html,xlsx}"
+    publishDir params.publish_dir+'/s9' //, pattern: "*.{html,xlsx}"
     cpus params.mosdepth_threads
     memory params.disk_mosdepth+' GB'
     tag {"$sampleID"}
@@ -185,7 +185,7 @@ process mosdepth {
 }
 process multiqc {
     container params.container_multiqc
-    publishDir params.publish_dir, pattern: "*.html"
+    publishDir params.publish_dir+'/s10' //, pattern: "*.html"
     memory params.disk_multiqc+' GB'
     tag {"$redsheet_name"}
     afterScript "for sample in ${samplenames}; do cp multiqc_report.html multiqc_\${sample}.html; done; rm multiqc_report.html"
@@ -205,7 +205,7 @@ process multiqc {
 }
 process collateQC {
     container params.container_collateqc
-    publishDir params.publish_dir
+    publishDir params.publish_dir+'/s11'
 	tag {"$redsheet_name"}
     afterScript "for sample in ${samplenames}; do cp collated_qc.html batchqc_\${sample}.html; cp collated_qc.xlsx batchqc_\${sample}.xlsx; done; rm collated_qc*"
 
@@ -234,7 +234,7 @@ process collateQC {
 }
 process generate_manifests {
     container params.container_collateqc
-    publishDir params.publish_dir+'/manifests', pattern: "*.json"
+    publishDir params.publish_dir+'/manifests' //, pattern: "*.json"
     tag {"$redsheet"}
 
     input:
