@@ -101,6 +101,8 @@ process sambamba_merge {
     sambamba merge \
         --nthreads ${params.sambamba_merge_threads} \
         ${sampleID}.merged.bam $bam 
+    df -h
+    ls -alrth
     """
 }
 process sambamba_markdup {
@@ -119,6 +121,7 @@ process sambamba_markdup {
     sambamba markdup \
         --overflow-list-size 2000000 \
         $bam ${sampleID}.markeddup.bam
+    df -h
     ls -alrth
     """
 }
@@ -259,6 +262,9 @@ process generate_manifests {
 }
 
 workflow {
+    sambamba_merge(tuple(params.sampleID, [file(params.bme1), file(params.bme2), file(params.bme3), file(params.bme4)]))
+    sambamba_markdup(sambamba_merge.out.map { it -> [it[0], it[1]] })
+    /*
     redsheet = file(params.redsheet)
     manifestdir = file(params.manifestdir)
     parseManifests([params.redsheet, redsheet, manifestdir, params.fastq_rootdir])
@@ -310,4 +316,5 @@ workflow {
         manifestdir,
         ch_markdup_bam.map {it -> it[0]}.toList()
     )
+    */
 }
