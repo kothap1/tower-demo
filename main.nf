@@ -89,7 +89,7 @@ process sambamba_merge {
     container params.container_sambamba
     publishDir params.publish_dir
     cpus params.sambamba_merge_threads
-    memory params.disk_sambamba_merge+' GB'
+    //memory params.disk_sambamba_merge+' GB'
     tag {"$sampleID"}
     input:
     tuple val(sampleID), file(bam)
@@ -109,7 +109,7 @@ process sambamba_markdup {
     container params.container_sambamba
     publishDir params.publish_dir //, pattern: "*.{bam,bai}"
     cpus params.sambamba_markdup_threads
-    memory params.disk_sambamba_markdup+' GB'
+    //memory params.disk_sambamba_markdup+' GB'
     tag {"$sampleID"}
     input:
     tuple val(sampleID), file(bam)
